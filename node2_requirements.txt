@@ -1,0 +1,20 @@
+# Node 2: Daily Briefing Generator Requirements
+
+# Web framework (for MCP server)
+fastapi==0.104.1
+uvicorn==0.24.0
+
+# HTTP client for async requests
+aiohttp==3.9.1
+
+# Data validation
+pydantic==2.5.2
+
+# Template engine for emails
+jinja2==3.1.2
+
+# Environment variables
+python-dotenv==1.0.0
+
+# Type hints
+typing-extensions==4.8.0

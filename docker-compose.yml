@@ -1,8 +1,11 @@
 version: '3.8'
 
 services:
+  # Node 1: User Intake Form
   node1-intake:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.node1
     ports:
       - "8001:8001"
     volumes:
@@ -10,3 +13,34 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
     command: python src/node1_backend.py
+
+  # MCP Article Server (mock for development)
+  mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.node2
+    ports:
+      - "8002:8002"
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: python src/mcp_article_server.py
+
+  # Node 2: Briefing Generator (runs on schedule or manually)
+  node2-briefing:
+    build:
+      context: .
+      dockerfile: Dockerfile.node2
+    volumes:
+      - ./user_profiles.jsonl:/app/user_profiles.jsonl
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MCP_SERVER_URL=http://mcp-server:8002
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SMTP_SERVER=${SMTP_SERVER:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - FROM_EMAIL=${FROM_EMAIL}
+    depends_on:
+      - mcp-server
+    command: python src/node2_briefing_generator.py --dry-run
