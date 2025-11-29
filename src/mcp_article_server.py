@@ -2,19 +2,27 @@
 MCP Article Server
 
 Serves AI newsletter articles for the briefing system.
-This is a mock server for development/testing. In production, this would
-connect to real newsletter sources via RSS, APIs, or web scraping.
+Fetches real articles from RSS feeds of popular AI newsletters.
 """
 
+import asyncio
+import aiohttp
+import feedparser
+import logging
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime, timedelta
-import random
-import hashlib
+from dataclasses import dataclass
+import html
+import re
 
-app = FastAPI(title="MCP Article Server", version="1.0.0")
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+app = FastAPI(title="MCP Article Server", version="2.0.0")
 
 # CORS for local development
 app.add_middleware(
@@ -45,169 +53,220 @@ class ArticleResponse(BaseModel):
     status: str
     count: int
     articles: List[Article]
+    sources_checked: List[str]
     retrieved_at: str
 
 
 # ============================================================================
-# MOCK DATA GENERATOR
+# RSS FEED CONFIGURATION
 # ============================================================================
 
-SOURCES = [
-    "The Rundown AI",
-    "TLDR AI",
-    "The Neuron",
-    "AI Breakfast",
-    "Ben's Bites",
-    "The AI Report",
-    "Import AI",
-    "Last Week in AI"
-]
+@dataclass
+class FeedConfig:
+    """Configuration for an RSS feed source."""
+    name: str
+    url: str
+    enabled: bool = True
 
-MOCK_ARTICLES = [
-    {
-        "title": "OpenAI Announces GPT-5 with Revolutionary Reasoning Capabilities",
-        "text": "OpenAI has unveiled GPT-5, their latest large language model featuring unprecedented reasoning capabilities. The new model demonstrates significant improvements in mathematical problem-solving, code generation, and multi-step logical reasoning. Early benchmarks show GPT-5 outperforming previous models by 40% on complex reasoning tasks. The model also introduces a new 'chain of thought' mechanism that allows users to see the model's reasoning process in real-time. Industry experts predict this release will accelerate AI adoption across enterprise applications.",
-        "topics": ["LLMs", "AI Product Launches"]
-    },
-    {
-        "title": "Anthropic Releases Claude 4 with Enhanced Safety Features",
-        "text": "Anthropic has launched Claude 4, featuring advanced constitutional AI techniques and improved safety guardrails. The new model includes better instruction following, reduced hallucinations, and enhanced ability to decline harmful requests while remaining helpful. Claude 4 also introduces 'artifact mode' for generating structured outputs like code, documents, and data analysis. Enterprise customers report 60% reduction in moderation issues compared to previous versions.",
-        "topics": ["LLMs", "AI Safety & Ethics"]
-    },
-    {
-        "title": "Google DeepMind's AlphaFold 3 Predicts Drug Interactions",
-        "text": "Google DeepMind has extended AlphaFold to predict drug-protein interactions with 95% accuracy. AlphaFold 3 can now model how potential drug molecules will bind to protein targets, dramatically accelerating pharmaceutical research. Several major drug companies have already integrated the tool into their discovery pipelines. Researchers estimate this could reduce drug development timelines by 2-3 years and save billions in research costs.",
-        "topics": ["AI in Healthcare", "AI Research & Papers"]
-    },
-    {
-        "title": "Microsoft Copilot Now Handles 100-Step Workflows Autonomously",
-        "text": "Microsoft has upgraded Copilot with autonomous agent capabilities, enabling it to execute complex multi-step workflows without human intervention. The new 'Copilot Agents' can handle tasks like expense report processing, meeting scheduling, and data analysis across multiple applications. Early enterprise adopters report 70% time savings on routine administrative tasks. The feature is rolling out to Microsoft 365 Enterprise customers this month.",
-        "topics": ["Agents & Automation", "AI in Business"]
-    },
-    {
-        "title": "EU AI Act Implementation Begins: What Companies Need to Know",
-        "text": "The European Union's AI Act has entered its implementation phase, with the first compliance deadlines approaching. Companies must now classify their AI systems by risk level and implement appropriate safeguards. High-risk applications in healthcare, education, and employment face the strictest requirements. Legal experts recommend companies begin compliance audits immediately, as penalties can reach 7% of global revenue for violations.",
-        "topics": ["AI Regulation & Policy", "AI Safety & Ethics"]
-    },
-    {
-        "title": "Startup Raises $500M for Autonomous Coding Agents",
-        "text": "AI coding startup Cognition has raised $500 million at a $2 billion valuation for its Devin autonomous coding agent. Devin can independently handle entire software development tasks, from requirements analysis to deployment. The company reports that Devin has completed over 10,000 real-world coding tasks with 94% success rate. Investors include major tech companies and leading AI-focused venture funds.",
-        "topics": ["AI Startups & Funding", "Agents & Automation"]
-    },
-    {
-        "title": "New Research Shows LLMs Can Learn from Single Examples",
-        "text": "Researchers at Stanford and Berkeley have demonstrated that large language models can effectively learn new tasks from just one example, challenging assumptions about AI training requirements. The 'one-shot meta-learning' technique enables rapid adaptation without fine-tuning. This breakthrough could dramatically reduce the cost and time required to customize AI models for specific applications.",
-        "topics": ["AI Research & Papers", "LLMs"]
-    },
-    {
-        "title": "Apple Intelligence Expands with On-Device Image Generation",
-        "text": "Apple has expanded Apple Intelligence with on-device image generation capabilities that run entirely on iPhone and Mac hardware. The feature enables private, fast image creation without cloud processing. Apple claims the on-device model produces results comparable to cloud-based alternatives while maintaining user privacy. The update will be available to all Apple Intelligence-supported devices next month.",
-        "topics": ["AI Product Launches", "Edge AI & On-Device"]
-    },
-    {
-        "title": "Healthcare AI Detects Cancer 5 Years Before Traditional Methods",
-        "text": "A new AI system developed by MIT and Mass General Hospital can detect pancreatic cancer up to 5 years before conventional diagnosis. The model analyzes routine medical records and lab results to identify subtle patterns predictive of future cancer development. Clinical trials show 87% accuracy in early detection, potentially saving thousands of lives annually through earlier intervention.",
-        "topics": ["AI in Healthcare", "AI Research & Papers"]
-    },
-    {
-        "title": "Tesla FSD V13 Achieves Level 4 Autonomy in Limited Conditions",
-        "text": "Tesla's Full Self-Driving version 13 has achieved Level 4 autonomy certification for highway driving in select states. The update enables true hands-free operation without driver monitoring under specific conditions. Tesla reports zero at-fault accidents in over 10 million miles of V13 testing. Regulatory approval for broader deployment is expected within six months.",
-        "topics": ["Autonomous Vehicles", "AI Product Launches"]
-    },
-    {
-        "title": "Open Source AI Alliance Releases 70B Parameter Model",
-        "text": "The Open Source AI Alliance, backed by Meta, IBM, and Intel, has released a new 70 billion parameter model under Apache 2.0 license. The model matches GPT-4 performance on most benchmarks while being fully open for commercial use. The release includes training code, datasets, and fine-tuning guides. Researchers praise the move as a major step toward democratizing advanced AI.",
-        "topics": ["Open Source AI", "LLMs"]
-    },
-    {
-        "title": "AI-Powered Robots Enter Amazon Warehouses",
-        "text": "Amazon has deployed 10,000 AI-powered humanoid robots across its fulfillment centers. The robots, developed by Figure AI, can pick, pack, and sort items with 99% accuracy. Workers report that robots handle the most physically demanding tasks, reducing injuries by 40%. Amazon plans to expand the robot workforce to 100,000 units by end of year.",
-        "topics": ["Robotics & Physical AI", "AI in Business"]
-    },
-    {
-        "title": "New Jailbreak Attack Affects All Major LLMs",
-        "text": "Security researchers have discovered a universal jailbreak technique that bypasses safety measures in ChatGPT, Claude, Gemini, and other major LLMs. The 'prompt injection cascade' attack exploits how models process nested instructions. AI companies are racing to patch the vulnerability, highlighting ongoing challenges in AI safety. Researchers recommend additional input validation for production AI applications.",
-        "topics": ["AI Safety & Ethics", "AI Research & Papers"]
-    },
-    {
-        "title": "Nvidia Unveils B200 GPU with 3x AI Performance",
-        "text": "Nvidia has announced the B200 Blackwell GPU, delivering 3x the AI training performance of the H100. The new chip features 192GB of HBM3e memory and improved transformer engine for large language models. Cloud providers are already ordering millions of units, though supply constraints are expected through next year. The B200 will power the next generation of AI infrastructure.",
-        "topics": ["AI Hardware & Infrastructure", "AI Product Launches"]
-    },
-    {
-        "title": "Synthetic Data Market Grows 200% as Privacy Concerns Rise",
-        "text": "The synthetic data generation market has grown 200% year-over-year as companies seek privacy-compliant AI training alternatives. New techniques can generate realistic datasets that preserve statistical properties without exposing real user information. Major enterprises are adopting synthetic data for healthcare, finance, and customer analytics applications where privacy regulations restrict real data use.",
-        "topics": ["Data & Privacy", "AI in Business"]
-    },
-    {
-        "title": "AI Writing Assistants Now Used by 60% of Knowledge Workers",
-        "text": "A new survey reveals that 60% of knowledge workers regularly use AI writing assistants for email, reports, and documentation. The most common use cases include drafting initial content, editing for clarity, and translating between languages. Workers report average time savings of 2 hours per day, though concerns about over-reliance and skill atrophy persist.",
-        "topics": ["AI in Business", "LLMs"]
-    },
-    {
-        "title": "Researchers Achieve Breakthrough in AI Energy Efficiency",
-        "text": "MIT researchers have developed a new neural network architecture that reduces AI inference energy consumption by 90%. The 'sparse activation' technique only activates necessary neurons for each task, dramatically cutting power requirements. The breakthrough could enable advanced AI on mobile devices and reduce the environmental impact of large-scale AI deployments.",
-        "topics": ["AI Research & Papers", "Edge AI & On-Device"]
-    },
-    {
-        "title": "China Releases Open-Weight Model Rivaling GPT-4",
-        "text": "Chinese AI lab Zhipu has released GLM-5, an open-weight model matching GPT-4 performance on Chinese and English benchmarks. The model is available for commercial use with minimal restrictions, challenging Western dominance in frontier AI. Analysts note the rapid pace of Chinese AI development despite export controls on advanced chips.",
-        "topics": ["LLMs", "AI Regulation & Policy"]
-    },
-    {
-        "title": "AI Tutors Show 30% Learning Improvement in Schools",
-        "text": "A large-scale study across 500 schools shows AI tutoring systems improve student learning outcomes by 30% on average. The personalized AI tutors adapt to individual learning styles and pace, providing immediate feedback on practice problems. Critics raise concerns about screen time and the role of human teachers, while proponents highlight potential to address teacher shortages.",
-        "topics": ["AI in Education", "AI Research & Papers"]
-    },
-    {
-        "title": "Venture Funding for AI Startups Reaches $100B in 2025",
-        "text": "Global venture funding for AI startups has surpassed $100 billion in 2025, doubling from the previous year. The largest deals focus on foundation models, enterprise AI applications, and autonomous systems. Despite the funding surge, valuations remain high with many companies yet to demonstrate sustainable revenue. Investors increasingly focus on AI infrastructure and vertical applications over general-purpose models.",
-        "topics": ["AI Startups & Funding", "AI in Business"]
-    }
+
+# AI Newsletter RSS Feeds
+RSS_FEEDS = [
+    FeedConfig("TLDR AI", "https://tldr.tech/ai/rss"),
+    FeedConfig("Import AI", "https://importai.substack.com/feed"),
+    FeedConfig("The Neuron", "https://www.theneurondaily.com/feed"),
+    FeedConfig("Ben's Bites", "https://bensbites.beehiiv.com/feed"),
+    FeedConfig("AI Supremacy", "https://aisupremacy.substack.com/feed"),
+    FeedConfig("The Rundown AI", "https://www.therundown.ai/feed"),
+    FeedConfig("Superhuman AI", "https://superhumanai.beehiiv.com/feed"),
+    FeedConfig("The Algorithm", "https://www.technologyreview.com/feed/", enabled=True),
+    FeedConfig("AI Weekly", "https://aiweekly.co/feed", enabled=True),
+    FeedConfig("Last Week in AI", "https://lastweekin.ai/feed", enabled=True),
 ]
 
 
-def generate_url(title: str, source: str) -> str:
-    """Generate a deterministic mock URL for an article."""
-    slug = title.lower().replace(" ", "-")[:50]
-    hash_suffix = hashlib.md5(f"{title}{source}".encode()).hexdigest()[:8]
-    domain = source.lower().replace(" ", "").replace("'", "")
-    return f"https://{domain}.com/articles/{slug}-{hash_suffix}"
+# ============================================================================
+# HTML/TEXT UTILITIES
+# ============================================================================
+
+def strip_html(text: str) -> str:
+    """Remove HTML tags and decode entities."""
+    if not text:
+        return ""
+    # Remove HTML tags
+    clean = re.sub(r'<[^>]+>', ' ', text)
+    # Decode HTML entities
+    clean = html.unescape(clean)
+    # Normalize whitespace
+    clean = re.sub(r'\s+', ' ', clean).strip()
+    return clean
 
 
-def get_mock_articles(since_date: Optional[datetime] = None, limit: int = 50) -> List[Article]:
-    """Generate mock articles with realistic timestamps."""
-    now = datetime.utcnow()
-    articles = []
+def extract_text(entry: dict) -> str:
+    """Extract text content from RSS entry."""
+    # Try different fields where content might be
+    content = ""
 
-    for i, mock in enumerate(MOCK_ARTICLES):
-        # Generate a random timestamp within the last 24 hours
-        hours_ago = random.uniform(0, 24)
-        published = now - timedelta(hours=hours_ago)
+    # Check content:encoded (full article)
+    if hasattr(entry, 'content') and entry.content:
+        content = entry.content[0].get('value', '')
 
-        # Skip if before since_date
-        if since_date and published < since_date:
-            continue
+    # Check summary/description
+    if not content and hasattr(entry, 'summary'):
+        content = entry.summary
 
-        source = random.choice(SOURCES)
+    # Check description
+    if not content and hasattr(entry, 'description'):
+        content = entry.description
 
-        article = Article(
-            source=source,
-            url=generate_url(mock["title"], source),
-            title=mock["title"],
-            published=published.isoformat() + "Z",
-            text=mock["text"],
-            retrieved_at=now.isoformat() + "Z"
+    # Strip HTML and clean up
+    text = strip_html(content)
+
+    # Limit length (keep first ~2000 chars for processing)
+    if len(text) > 2000:
+        text = text[:2000] + "..."
+
+    return text
+
+
+def parse_date(entry: dict) -> Optional[datetime]:
+    """Parse date from RSS entry."""
+    # Try published_parsed first
+    if hasattr(entry, 'published_parsed') and entry.published_parsed:
+        try:
+            return datetime(*entry.published_parsed[:6])
+        except:
+            pass
+
+    # Try updated_parsed
+    if hasattr(entry, 'updated_parsed') and entry.updated_parsed:
+        try:
+            return datetime(*entry.updated_parsed[:6])
+        except:
+            pass
+
+    # Default to now
+    return datetime.utcnow()
+
+
+# ============================================================================
+# RSS FETCHER
+# ============================================================================
+
+class RSSFetcher:
+    """Fetches and parses RSS feeds."""
+
+    def __init__(self, feeds: List[FeedConfig]):
+        self.feeds = [f for f in feeds if f.enabled]
+        self._cache: dict = {}
+        self._cache_ttl = 300  # 5 minutes
+        self._last_fetch: Optional[datetime] = None
+
+    async def fetch_feed(self, session: aiohttp.ClientSession, feed: FeedConfig) -> List[Article]:
+        """Fetch a single RSS feed."""
+        articles = []
+        now = datetime.utcnow()
+
+        try:
+            logger.info(f"Fetching: {feed.name} from {feed.url}")
+
+            async with session.get(feed.url, timeout=aiohttp.ClientTimeout(total=10)) as response:
+                if response.status != 200:
+                    logger.warning(f"Failed to fetch {feed.name}: HTTP {response.status}")
+                    return articles
+
+                content = await response.text()
+                parsed = feedparser.parse(content)
+
+                if parsed.bozo and not parsed.entries:
+                    logger.warning(f"Failed to parse {feed.name}: {parsed.bozo_exception}")
+                    return articles
+
+                for entry in parsed.entries[:20]:  # Limit entries per feed
+                    try:
+                        title = strip_html(getattr(entry, 'title', 'Untitled'))
+                        url = getattr(entry, 'link', '')
+                        text = extract_text(entry)
+                        published = parse_date(entry)
+
+                        if not url or not title:
+                            continue
+
+                        articles.append(Article(
+                            source=feed.name,
+                            url=url,
+                            title=title,
+                            published=published.isoformat() + "Z",
+                            text=text if text else f"Read more at {url}",
+                            retrieved_at=now.isoformat() + "Z"
+                        ))
+                    except Exception as e:
+                        logger.warning(f"Error parsing entry from {feed.name}: {e}")
+                        continue
+
+                logger.info(f"Got {len(articles)} articles from {feed.name}")
+
+        except asyncio.TimeoutError:
+            logger.warning(f"Timeout fetching {feed.name}")
+        except Exception as e:
+            logger.error(f"Error fetching {feed.name}: {e}")
+
+        return articles
+
+    async def fetch_all(self, since_date: Optional[datetime] = None, limit: int = 50) -> tuple[List[Article], List[str]]:
+        """Fetch all RSS feeds in parallel."""
+        all_articles = []
+        sources_checked = []
+
+        async with aiohttp.ClientSession(
+            headers={"User-Agent": "AI-Briefing-System/1.0"}
+        ) as session:
+            # Fetch all feeds in parallel
+            tasks = [self.fetch_feed(session, feed) for feed in self.feeds]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+
+            for feed, result in zip(self.feeds, results):
+                sources_checked.append(feed.name)
+                if isinstance(result, Exception):
+                    logger.error(f"Error from {feed.name}: {result}")
+                    continue
+                all_articles.extend(result)
+
+        # Deduplicate by URL
+        seen_urls = set()
+        unique_articles = []
+        for article in all_articles:
+            if article.url not in seen_urls:
+                seen_urls.add(article.url)
+                unique_articles.append(article)
+
+        # Filter by date if specified
+        if since_date:
+            filtered = []
+            for article in unique_articles:
+                try:
+                    pub_date = datetime.fromisoformat(article.published.replace("Z", ""))
+                    if pub_date >= since_date:
+                        filtered.append(article)
+                except:
+                    filtered.append(article)  # Keep if can't parse date
+            unique_articles = filtered
+
+        # Sort by published date (newest first)
+        unique_articles.sort(
+            key=lambda x: x.published,
+            reverse=True
         )
-        articles.append(article)
 
-        if len(articles) >= limit:
-            break
+        # Limit results
+        unique_articles = unique_articles[:limit]
 
-    # Sort by published date (newest first)
-    articles.sort(key=lambda x: x.published, reverse=True)
+        logger.info(f"Total: {len(unique_articles)} unique articles from {len(sources_checked)} sources")
 
-    return articles
+        return unique_articles, sources_checked
+
+
+# Initialize fetcher
+fetcher = RSSFetcher(RSS_FEEDS)
 
 
 # ============================================================================
@@ -219,42 +278,56 @@ async def root():
     """API info."""
     return {
         "service": "MCP Article Server",
-        "version": "1.0.0",
+        "version": "2.0.0",
+        "description": "Fetches real AI newsletter articles via RSS",
+        "sources": [f.name for f in RSS_FEEDS if f.enabled],
         "endpoints": {
             "/articles": "Get articles (with optional ?since=YYYY-MM-DD filter)",
+            "/sources": "List configured RSS sources",
             "/health": "Health check"
         }
+    }
+
+
+@app.get("/sources")
+async def get_sources():
+    """List configured RSS feed sources."""
+    return {
+        "sources": [
+            {"name": f.name, "url": f.url, "enabled": f.enabled}
+            for f in RSS_FEEDS
+        ]
     }
 
 
 @app.get("/articles", response_model=ArticleResponse)
 async def get_articles(
     since: Optional[str] = Query(None, description="Filter articles since date (YYYY-MM-DD)"),
-    limit: int = Query(50, description="Maximum number of articles to return")
+    limit: int = Query(50, description="Maximum number of articles to return", le=100)
 ):
     """
-    Fetch articles from AI newsletters.
+    Fetch articles from AI newsletter RSS feeds.
 
     - **since**: Optional date filter (YYYY-MM-DD format)
-    - **limit**: Maximum number of articles (default 50)
+    - **limit**: Maximum number of articles (default 50, max 100)
     """
     since_date = None
     if since:
         try:
             since_date = datetime.fromisoformat(since.replace("Z", ""))
         except ValueError:
-            # Try parsing as date only
             try:
                 since_date = datetime.strptime(since, "%Y-%m-%d")
             except ValueError:
                 pass
 
-    articles = get_mock_articles(since_date=since_date, limit=limit)
+    articles, sources_checked = await fetcher.fetch_all(since_date=since_date, limit=limit)
 
     return ArticleResponse(
         status="success",
         count=len(articles),
         articles=articles,
+        sources_checked=sources_checked,
         retrieved_at=datetime.utcnow().isoformat() + "Z"
     )
 
@@ -265,6 +338,8 @@ async def health():
     return {
         "status": "ok",
         "service": "MCP Article Server",
+        "version": "2.0.0",
+        "sources_configured": len([f for f in RSS_FEEDS if f.enabled]),
         "timestamp": datetime.utcnow().isoformat() + "Z"
     }
 
@@ -278,6 +353,6 @@ if __name__ == "__main__":
     uvicorn.run(
         app,
         host="0.0.0.0",
-        port=8002,  # Different port from Node 1
+        port=8002,
         log_level="info"
     )
