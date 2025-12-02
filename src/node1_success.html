@@ -1,19 +1,164 @@
----
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>You're Subscribed - AI Briefing</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-## 📄 **File: Dockerfile**
+        body {
+            font-family: Georgia, 'Times New Roman', serif;
+            background-color: #f5f5f0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            line-height: 1.6;
+            color: #2d2d2d;
+        }
 
-Create this file in your root folder (`ai-briefing-system/`):
+        .container {
+            max-width: 480px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 2px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            text-align: center;
+        }
 
-```dockerfile
-FROM python:3.11-slim
+        .header {
+            padding: 48px 40px 32px;
+            border-bottom: 1px solid #e8e8e4;
+        }
 
-WORKDIR /app
+        .checkmark {
+            width: 64px;
+            height: 64px;
+            border: 2px solid #1a1a1a;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+        }
 
-COPY node1_requirements.txt .
-RUN pip install --no-cache-dir -r node1_requirements.txt
+        .checkmark svg {
+            width: 32px;
+            height: 32px;
+            stroke: #1a1a1a;
+            stroke-width: 2;
+            fill: none;
+        }
 
-COPY src/ src/
+        .header h1 {
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: 28px;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+            color: #1a1a1a;
+            margin-bottom: 12px;
+        }
 
-EXPOSE 8001
+        .header p {
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: 16px;
+            color: #666;
+            line-height: 1.7;
+        }
 
-CMD ["python", "src/node1_backend.py"]
+        .content {
+            padding: 36px 40px;
+            background: #fafaf8;
+            border-bottom: 1px solid #e8e8e4;
+        }
+
+        .section-label {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #999;
+            margin-bottom: 16px;
+        }
+
+        .content p {
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: 15px;
+            color: #555;
+            line-height: 1.8;
+        }
+
+        .footer {
+            padding: 32px 40px;
+        }
+
+        .btn-home {
+            display: inline-block;
+            padding: 14px 32px;
+            background: #1a1a1a;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 2px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            transition: background 0.2s;
+        }
+
+        .btn-home:hover {
+            background: #333;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 20px 12px;
+            }
+
+            .header,
+            .content,
+            .footer {
+                padding-left: 24px;
+                padding-right: 24px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="checkmark">
+                <svg viewBox="0 0 24 24">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </div>
+            <h1>You're all set</h1>
+            <p>Your personalized AI briefing is on its way.</p>
+        </header>
+
+        <section class="content">
+            <p class="section-label">What happens next</p>
+            <p>
+                Tomorrow morning, you'll receive your first briefing with
+                the top AI stories curated just for you. Each day we'll
+                scan dozens of sources and surface what matters most
+                based on your interests.
+            </p>
+        </section>
+
+        <footer class="footer">
+            <a href="/" class="btn-home">Back to Home</a>
+        </footer>
+    </div>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Briefing System - User Intake Form</title>
+    <title>AI Briefing - Subscribe</title>
     <style>
         * {
             margin: 0;
@@ -12,200 +12,258 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: Georgia, 'Times New Roman', serif;
+            background-color: #f5f5f0;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 40px 20px;
+            line-height: 1.6;
+            color: #2d2d2d;
         }
 
         .container {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 600px;
+            max-width: 540px;
             width: 100%;
-            padding: 40px;
+            background: #ffffff;
+            border-radius: 2px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
         }
 
+        /* Header */
         .header {
-            margin-bottom: 30px;
+            padding: 48px 40px 32px;
+            border-bottom: 1px solid #e8e8e4;
             text-align: center;
         }
 
         .header h1 {
-            font-size: 28px;
-            color: #333;
-            margin-bottom: 8px;
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: 32px;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+            color: #1a1a1a;
+            margin-bottom: 12px;
         }
 
         .header p {
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: 16px;
             color: #666;
-            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* Form Content */
+        .form-content {
+            padding: 36px 40px;
         }
 
         .form-group {
-            margin-bottom: 24px;
+            margin-bottom: 28px;
         }
 
         label {
             display: block;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 8px;
-            font-size: 14px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #999;
+            margin-bottom: 10px;
         }
 
         .required {
-            color: #e74c3c;
+            color: #c97b7b;
         }
 
         input[type="email"],
         input[type="text"],
         input[type="time"] {
             width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-            transition: border-color 0.3s;
+            padding: 14px 16px;
+            border: 1px solid #e8e8e4;
+            border-radius: 2px;
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: 16px;
+            color: #2d2d2d;
+            background: #fafaf8;
+            transition: border-color 0.2s, background-color 0.2s;
         }
 
         input[type="email"]:focus,
         input[type="text"]:focus,
         input[type="time"]:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: #1a1a1a;
+            background: #ffffff;
         }
 
-        .topics-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            max-height: 300px;
-            overflow-y: auto;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            background: #f9f9f9;
-        }
-
-        .topic-item {
-            display: flex;
-            align-items: center;
-        }
-
-        .topic-item input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-            margin-right: 8px;
-            accent-color: #667eea;
-        }
-
-        .topic-item label {
-            margin: 0;
-            font-weight: 400;
-            cursor: pointer;
-            font-size: 13px;
+        input::placeholder {
+            color: #bbb;
         }
 
         .form-hint {
-            font-size: 12px;
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: 13px;
             color: #999;
-            margin-top: 4px;
+            margin-top: 8px;
+            font-style: italic;
+        }
+
+        /* Topics Section */
+        .topics-section {
+            padding: 36px 40px;
+            background: #fafaf8;
+            border-top: 1px solid #e8e8e4;
+            border-bottom: 1px solid #e8e8e4;
+        }
+
+        .topics-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .topic-pill {
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .topic-pill input[type="checkbox"] {
+            display: none;
+        }
+
+        .topic-pill label {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #ffffff;
+            border: 1px solid #e8e8e4;
+            border-radius: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 13px;
+            font-weight: 400;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: none;
+            letter-spacing: 0;
+            margin-bottom: 0;
+        }
+
+        .topic-pill label:hover {
+            border-color: #1a1a1a;
+            color: #1a1a1a;
+        }
+
+        .topic-pill input[type="checkbox"]:checked + label {
+            background: #1a1a1a;
+            border-color: #1a1a1a;
+            color: #ffffff;
+        }
+
+        .topics-selected {
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: 14px;
+            color: #999;
+            margin-top: 16px;
+            font-style: italic;
+        }
+
+        /* Submit Section */
+        .submit-section {
+            padding: 36px 40px;
         }
 
         .button-group {
             display: flex;
             gap: 12px;
-            margin-top: 30px;
         }
 
         button {
             flex: 1;
-            padding: 12px 24px;
+            padding: 14px 24px;
             border: none;
-            border-radius: 6px;
+            border-radius: 2px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             font-size: 14px;
-            font-weight: 600;
+            font-weight: 500;
+            letter-spacing: 0.5px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
         }
 
         .btn-submit {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: #1a1a1a;
+            color: #ffffff;
         }
 
         .btn-submit:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+            background: #333;
         }
 
         .btn-submit:disabled {
-            opacity: 0.6;
+            opacity: 0.5;
             cursor: not-allowed;
-            transform: none;
         }
 
         .btn-reset {
-            background: #f0f0f0;
-            color: #333;
+            background: transparent;
+            color: #999;
+            border: 1px solid #e8e8e4;
         }
 
         .btn-reset:hover {
-            background: #e0e0e0;
+            border-color: #999;
+            color: #666;
         }
 
+        /* Alert */
         .alert {
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            font-size: 14px;
+            padding: 16px 20px;
+            margin: 0 40px 24px;
+            border-radius: 2px;
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: 15px;
             display: none;
         }
 
         .alert.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background: #f0f7f0;
+            color: #2d5a2d;
+            border: 1px solid #c8e6c8;
             display: block;
         }
 
         .alert.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background: #fdf5f5;
+            color: #8b3a3a;
+            border: 1px solid #f0d0d0;
             display: block;
         }
 
-        .alert.info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-            display: block;
-        }
-
+        /* Loading */
         .loading {
             display: none;
             text-align: center;
-            color: #667eea;
+            padding: 16px;
+            font-family: Georgia, 'Times New Roman', serif;
             font-size: 14px;
+            color: #999;
+            font-style: italic;
         }
 
         .spinner {
             display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid #f3f3f3;
-            border-top: 2px solid #667eea;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #e8e8e4;
+            border-top: 2px solid #1a1a1a;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin-right: 8px;
+            margin-right: 10px;
+            vertical-align: middle;
         }
 
         @keyframes spin {
@@ -213,88 +271,135 @@
             100% { transform: rotate(360deg); }
         }
 
-        .topics-selected {
+        /* Footer */
+        .footer {
+            padding: 24px 40px;
+            background: #f5f5f0;
+            text-align: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             font-size: 12px;
+            color: #999;
+        }
+
+        .footer a {
             color: #666;
-            margin-top: 8px;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            body {
+                padding: 20px 12px;
+            }
+
+            .header,
+            .form-content,
+            .topics-section,
+            .submit-section {
+                padding-left: 24px;
+                padding-right: 24px;
+            }
+
+            .alert {
+                margin-left: 24px;
+                margin-right: 24px;
+            }
+
+            .header h1 {
+                font-size: 26px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>AI Briefing System</h1>
-            <p>Set up your daily AI newsletter briefing</p>
-        </div>
+        <!-- Header -->
+        <header class="header">
+            <h1>Your AI Briefing</h1>
+            <p>A personalized daily digest of AI news, curated for what matters to you.</p>
+        </header>
 
         <div id="alert" class="alert"></div>
 
         <form id="intakeForm">
-            <!-- Email -->
-            <div class="form-group">
-                <label for="email">Email Address <span class="required">*</span></label>
-                <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    placeholder="your@email.com"
-                    required
-                >
-                <div class="form-hint">We'll send your daily briefing to this email</div>
-            </div>
+            <!-- Basic Info -->
+            <div class="form-content">
+                <div class="form-group">
+                    <label for="email">Email Address <span class="required">*</span></label>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        placeholder="you@example.com"
+                        required
+                    >
+                    <div class="form-hint">Your briefing arrives here each morning</div>
+                </div>
 
-            <!-- Name -->
-            <div class="form-group">
-                <label for="name">Name (Optional)</label>
-                <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    placeholder="John Doe"
-                >
-                <div class="form-hint">How should we address you?</div>
-            </div>
+                <div class="form-group">
+                    <label for="name">Your Name</label>
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        placeholder="How should we greet you?"
+                    >
+                </div>
 
-            <!-- Briefing Time -->
-            <div class="form-group">
-                <label for="briefingTime">Preferred Briefing Time <span class="required">*</span></label>
-                <input
-                    type="time"
-                    id="briefingTime"
-                    name="briefingTime"
-                    value="09:00"
-                    required
-                >
-                <div class="form-hint">What time should you receive your daily briefing?</div>
+                <div class="form-group">
+                    <label for="briefingTime">Delivery Time <span class="required">*</span></label>
+                    <input
+                        type="time"
+                        id="briefingTime"
+                        name="briefingTime"
+                        value="09:00"
+                        required
+                    >
+                    <div class="form-hint">When would you like to receive your briefing?</div>
+                </div>
             </div>
 
             <!-- Topics -->
-            <div class="form-group">
-                <label>AI Newsletter Topics <span class="required">*</span></label>
+            <div class="topics-section">
+                <label>Your Interests <span class="required">*</span></label>
                 <div class="topics-container" id="topicsContainer">
-                    <!-- Topics will be populated by JavaScript -->
+                    <!-- Topics populated by JavaScript -->
                 </div>
                 <div class="topics-selected">
-                    Selected: <span id="selectedCount">0</span> topics
+                    <span id="selectedCount">0</span> topics selected
                 </div>
-                <div class="form-hint">Select the AI topics you're interested in</div>
             </div>
 
-            <!-- Buttons -->
-            <div class="button-group">
-                <button type="reset" class="btn-reset">Clear</button>
-                <button type="submit" class="btn-submit">Create Profile</button>
-            </div>
+            <!-- Submit -->
+            <div class="submit-section">
+                <div class="button-group">
+                    <button type="reset" class="btn-reset">Clear</button>
+                    <button type="submit" class="btn-submit">Subscribe</button>
+                </div>
 
-            <div class="loading" id="loading">
-                <span class="spinner"></span>
-                <span>Creating your profile...</span>
+                <div class="loading" id="loading">
+                    <span class="spinner"></span>
+                    <span>Creating your briefing...</span>
+                </div>
             </div>
         </form>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>By subscribing, you agree to receive daily email briefings.</p>
+            <p style="margin-top: 6px;">You can <a href="#">unsubscribe</a> at any time.</p>
+        </footer>
     </div>
 
     <script>
-        // Topic list (matches MCP server configuration)
         const TOPICS = [
             "LLMs",
             "Multimodal Models",
@@ -323,7 +428,6 @@
             "AI Ethics & Societal Impact"
         ];
 
-        // Initialize form
         document.addEventListener('DOMContentLoaded', function() {
             populateTopics();
             setupEventListeners();
@@ -335,7 +439,7 @@
 
             TOPICS.forEach(topic => {
                 const div = document.createElement('div');
-                div.className = 'topic-item';
+                div.className = 'topic-pill';
 
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
@@ -365,7 +469,6 @@
         async function handleSubmit(e) {
             e.preventDefault();
 
-            // Validate
             const email = document.getElementById('email').value.trim();
             const name = document.getElementById('name').value.trim();
             const briefingTime = document.getElementById('briefingTime').value;
@@ -374,7 +477,7 @@
             ).map(cb => cb.value);
 
             if (!email) {
-                showAlert('Email is required', 'error');
+                showAlert('Please enter your email address', 'error');
                 return;
             }
 
@@ -383,12 +486,10 @@
                 return;
             }
 
-            // Show loading
             document.getElementById('loading').style.display = 'block';
             document.querySelector('.btn-submit').disabled = true;
 
             try {
-                // Create user profile object
                 const userProfile = {
                     version: "1.0",
                     email: email,
@@ -398,7 +499,6 @@
                     created_at: new Date().toISOString()
                 };
 
-                // Submit to backend
                 const response = await fetch('/api/intake', {
                     method: 'POST',
                     headers: {
@@ -411,22 +511,21 @@
 
                 if (response.ok) {
                     showAlert(
-                        `Profile created! Briefings will be sent to ${email} at ${briefingTime} daily.`,
+                        `Welcome! Your first briefing arrives tomorrow at ${briefingTime}.`,
                         'success'
                     );
                     document.getElementById('intakeForm').reset();
                     updateSelectedCount();
 
-                    // Redirect after 2 seconds
                     setTimeout(() => {
                         window.location.href = '/success';
-                    }, 2000);
+                    }, 2500);
                 } else {
-                    showAlert(result.error || 'Failed to create profile', 'error');
+                    showAlert(result.error || 'Something went wrong. Please try again.', 'error');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showAlert('An error occurred. Please try again.', 'error');
+                showAlert('Unable to connect. Please try again.', 'error');
             } finally {
                 document.getElementById('loading').style.display = 'none';
                 document.querySelector('.btn-submit').disabled = false;
@@ -438,7 +537,6 @@
             alert.textContent = message;
             alert.className = `alert ${type}`;
 
-            // Auto-hide after 5 seconds
             if (type === 'success') {
                 setTimeout(() => {
                     alert.style.display = 'none';
