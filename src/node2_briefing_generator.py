@@ -59,12 +59,9 @@ class Config:
     openai_model: str = os.getenv("OPENAI_MODEL", "gpt-5.1")
     openai_base_url: str = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
 
-    # Email (Gmail)
-    smtp_server: str = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-    smtp_port: int = int(os.getenv("SMTP_PORT", "587"))
-    smtp_username: str = os.getenv("SMTP_USERNAME", "")
-    smtp_password: str = os.getenv("SMTP_PASSWORD", "")  # App password for Gmail
-    from_email: str = os.getenv("FROM_EMAIL", "")
+    # Email (Resend - get API key at resend.com)
+    resend_api_key: str = os.getenv("RESEND_API_KEY", "")
+    from_email: str = os.getenv("FROM_EMAIL", "briefing@resend.dev")  # Use your verified domain
 
     # Paths
     profiles_path: str = os.getenv("PROFILES_PATH", "user_profiles.jsonl")
@@ -523,25 +520,16 @@ class LLMProcessor:
 
 
 # ============================================================================
-# EMAIL SENDER
+# EMAIL SENDER (Resend API)
 # ============================================================================
 
 class EmailSender:
-    """Send briefing emails via SMTP."""
+    """Send briefing emails via Resend API."""
 
-    def __init__(
-        self,
-        smtp_server: str,
-        smtp_port: int,
-        username: str,
-        password: str,
-        from_email: str
-    ):
-        self.smtp_server = smtp_server
-        self.smtp_port = smtp_port
-        self.username = username
-        self.password = password
+    def __init__(self, api_key: str, from_email: str):
+        self.api_key = api_key
         self.from_email = from_email
+        self.api_url = "https://api.resend.com/emails"
 
     def _load_template(self, template_path: str) -> Template:
         """Load Jinja2 email template."""
@@ -648,27 +636,34 @@ class EmailSender:
         subject: str,
         html_body: str
     ) -> bool:
-        """Send email via SMTP."""
-        if not all([self.username, self.password, self.from_email]):
-            logger.warning("Email not configured, skipping send")
+        """Send email via Resend API."""
+        if not self.api_key:
+            logger.warning("RESEND_API_KEY not configured, skipping send")
             return False
 
         try:
-            msg = MIMEMultipart("alternative")
-            msg["Subject"] = subject
-            msg["From"] = self.from_email
-            msg["To"] = to_email
+            import requests
 
-            html_part = MIMEText(html_body, "html")
-            msg.attach(html_part)
+            response = requests.post(
+                self.api_url,
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "from": self.from_email,
+                    "to": [to_email],
+                    "subject": subject,
+                    "html": html_body
+                }
+            )
 
-            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
-                server.starttls()
-                server.login(self.username, self.password)
-                server.sendmail(self.from_email, to_email, msg.as_string())
-
-            logger.info(f"Email sent to {to_email}")
-            return True
+            if response.status_code == 200:
+                logger.info(f"Email sent to {to_email}")
+                return True
+            else:
+                logger.error(f"Resend API error: {response.status_code} - {response.text}")
+                return False
 
         except Exception as e:
             logger.error(f"Error sending email: {e}")
@@ -697,10 +692,7 @@ class BriefingGenerator:
         self.profile_loader = ProfileLoader(cfg.profiles_path)
         self.article_fetcher = ArticleFetcher(cfg.article_service_url)
         self.llm_processor = LLMProcessor(cfg.openai_api_key, cfg.openai_model, cfg.openai_base_url)
-        self.email_sender = EmailSender(
-            cfg.smtp_server, cfg.smtp_port,
-            cfg.smtp_username, cfg.smtp_password, cfg.from_email
-        )
+        self.email_sender = EmailSender(cfg.resend_api_key, cfg.from_email)
 
     async def generate_briefing_for_user(
         self,
